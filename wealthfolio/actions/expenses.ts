@@ -3,10 +3,17 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 
+const DEMO_EXPENSES = [
+    { id: 'demo-exp-1', user_id: 'demo', category: 'Rent', amount_inr: 25000, is_recurring: true, next_post_date: '2026-03-01', date: '2026-02-01' },
+    { id: 'demo-exp-2', user_id: 'demo', category: 'Groceries', amount_inr: 5000, is_recurring: false, next_post_date: null, date: '2026-02-14' },
+    { id: 'demo-exp-3', user_id: 'demo', category: 'Netflix', amount_inr: 699, is_recurring: true, next_post_date: '2026-03-10', date: '2026-02-10' },
+]
+
 export async function getExpenses() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
+
+  if (!user) return DEMO_EXPENSES
 
   const { data } = await supabase
     .from('expenses')
@@ -21,12 +28,12 @@ export async function getExpenses() {
 export async function addExpense(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
+  if (!user) throw new Error('Demo Mode: Cannot add expense. Please sign in (Disabled).')
 
   const category = formData.get('category') as string
   const amount = Number(formData.get('amount_inr'))
   const isRecurring = formData.get('is_recurring') === 'on'
-  const nextPostDate = formData.get('next_post_date') as string // YYYY-MM-DD
+  const nextPostDate = formData.get('next_post_date') as string
 
   const { error } = await supabase.from('expenses').insert({
     user_id: user.id,
@@ -45,7 +52,7 @@ export async function addExpense(formData: FormData) {
 export async function deleteExpense(id: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
+  if (!user) throw new Error('Demo Mode: Cannot delete expense.')
 
   const { error } = await supabase.from('expenses').delete().eq('id', id).eq('user_id', user.id)
   if (error) throw new Error(error.message)
@@ -60,7 +67,6 @@ export async function checkRecurringExpenses() {
 
   const today = new Date().toISOString().split('T')[0]
 
-  // Find recurring expenses due
   const { data: recurring } = await supabase
     .from('expenses')
     .select('*')
@@ -70,16 +76,14 @@ export async function checkRecurringExpenses() {
 
   if (recurring && recurring.length > 0) {
     for (const exp of recurring) {
-      // 1. Create instance (history)
       await supabase.from('expenses').insert({
         user_id: user.id,
         category: exp.category,
         amount_inr: exp.amount_inr,
-        is_recurring: false, // It's an instance, not the template
+        is_recurring: false,
         date: today
       })
 
-      // 2. Update next_post_date (add 1 month)
       const nextDate = new Date(exp.next_post_date)
       nextDate.setMonth(nextDate.getMonth() + 1)
       const nextDateStr = nextDate.toISOString().split('T')[0]
@@ -99,18 +103,14 @@ export async function checkRecurringExpenses() {
 export async function bulkAddExpenses(expenses: any[]) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
+  if (!user) throw new Error('Demo Mode: Cannot save expenses.')
 
   const expensesToInsert = expenses.map(e => ({
     user_id: user.id,
     category: e.category,
     amount_inr: Number(e.amount),
     is_recurring: false,
-    date: e.date.split('/').reverse().join('-'), // Convert DD/MM/YYYY to YYYY-MM-DD
-    // Assuming description goes into category or we add a description column later.
-    // For now, appending description to category if it's different, or just using category.
-    // Ideally, we should migrate schema to add description, but to stick to current schema:
-    // We will just use the category field for the category.
+    date: e.date.split('/').reverse().join('-'),
   }))
 
   const { error } = await supabase.from('expenses').insert(expensesToInsert)

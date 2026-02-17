@@ -8,11 +8,12 @@ export default async function Dashboard() {
 
   const data = await getWealthDashboardData()
 
+  // Data will be mock data if not logged in, or null if error
   if (!data) {
     return (
       <div className="p-4 text-center text-black">
         <h1 className="text-2xl font-bold mb-4">Welcome to WealthFolio</h1>
-        <p>Please log in to view your dashboard.</p>
+        <p>Unable to load data.</p>
       </div>
     )
   }

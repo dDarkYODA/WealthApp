@@ -4,56 +4,58 @@ import { createClient } from '@/utils/supabase/server'
 
 // Mock Data Fetchers
 async function getUSDINRRate() {
-  // In production, fetch from an API like https://api.exchangerate-api.com/v4/latest/USD
-  return 84.0 // Mock rate
+  return 84.0
 }
 
 async function getStockPrice(ticker: string) {
-  // Mock logic
-  // Assume US tickers are 1-4 letters, simple logic
-  // Returns INR price
-  // In real app, check if it is US or Indian.
-  // Assuming US if 'AAPL', 'TSLA' etc.
   const usTickers = ['AAPL', 'GOOGL', 'TSLA', 'MSFT', 'AMZN']
   if (usTickers.includes(ticker.toUpperCase())) {
      const usdRate = await getUSDINRRate()
-     return (Math.random() * 100 + 150) * usdRate // Random price between 150-250 USD
+     return (Math.random() * 100 + 150) * usdRate
   }
-  return 100.0 // Default INR price
+  return 100.0
 }
 
 async function getMFNAV(schemeCode: string) {
-  // Mock NAV
   return 150.5
 }
+
+// --- DEMO DATA ---
+const DEMO_ASSETS = [
+    { id: 'demo-1', user_id: 'demo', asset_type: 'Stock', ticker_or_code: 'AAPL', quantity: 15, avg_price_inr: 14500, market_value_inr: 0, loan_amount_inr: 0, name: 'Apple Inc.' },
+    { id: 'demo-2', user_id: 'demo', asset_type: 'MF', ticker_or_code: 'SBI-BLUECHIP', quantity: 5000, avg_price_inr: 120, market_value_inr: 0, loan_amount_inr: 0, name: 'SBI Bluechip Fund' },
+    { id: 'demo-3', user_id: 'demo', asset_type: 'Real Estate', ticker_or_code: 'APT-101', quantity: 1, avg_price_inr: 8500000, market_value_inr: 12000000, loan_amount_inr: 4500000, name: 'Luxury Apartment' },
+]
 
 export async function getWealthDashboardData() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  let assets = []
+
   if (!user) {
-    return null
+    // Return Demo Data if no user
+    assets = DEMO_ASSETS
+  } else {
+    const { data, error } = await supabase
+        .from('assets')
+        .select('*')
+        .eq('user_id', user.id)
+
+    if (error) {
+        console.error('Error fetching assets:', error)
+        return null
+    }
+    assets = data || []
   }
 
   const usdRate = await getUSDINRRate()
-
-  // Fetch Assets
-  const { data: assets, error } = await supabase
-    .from('assets')
-    .select('*')
-    .eq('user_id', user.id)
-
-  if (error) {
-    console.error('Error fetching assets:', error)
-    return null
-  }
 
   let totalNetWorth = 0
   let equity = 0
   let mfValue = 0
   let realEstateEquity = 0
 
-  // To avoid mutating the original objects in a way TS dislikes (if strict), we map
   const processedAssets = await Promise.all(assets.map(async (asset) => {
     let currentPrice = Number(asset.avg_price_inr) || 0
     let marketValue = 0
@@ -67,18 +69,10 @@ export async function getWealthDashboardData() {
        marketValue = currentPrice * Number(asset.quantity)
        mfValue += marketValue
     } else if (asset.asset_type === 'Real Estate') {
-       // Use stored market value
        marketValue = Number(asset.market_value_inr) || 0
        const loan = Number(asset.loan_amount_inr) || 0
        const reEquity = marketValue - loan
        realEstateEquity += reEquity
-       // For Real Estate, marketValue acts as the asset value, but net worth contribution is equity
-    }
-
-    // Sum for Total Net Worth
-    if (asset.asset_type !== 'Real Estate') {
-        // For non-RE, Market Value contributes directly (assuming no loans on stocks/MFs tracked here)
-        // If loan exists on RE, we added (Market - Loan) to realEstateEquity
     }
 
     return {
@@ -88,24 +82,25 @@ export async function getWealthDashboardData() {
     }
   }))
 
-  // Total Net Worth = Equity (Stocks) + MF Value + Real Estate Equity
   totalNetWorth = equity + mfValue + realEstateEquity
 
-  // Snapshot Logic
-  const today = new Date().toISOString().split('T')[0]
-  const { data: history } = await supabase
-    .from('net_worth_history')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('snapshot_date', today)
-    .single()
+  // Snapshot Logic (Only run if real user)
+  if (user) {
+      const today = new Date().toISOString().split('T')[0]
+      const { data: history } = await supabase
+        .from('net_worth_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('snapshot_date', today)
+        .single()
 
-  if (!history) {
-    await supabase.from('net_worth_history').insert({
-      user_id: user.id,
-      snapshot_date: today,
-      total_net_worth_inr: totalNetWorth
-    })
+      if (!history) {
+        await supabase.from('net_worth_history').insert({
+          user_id: user.id,
+          snapshot_date: today,
+          total_net_worth_inr: totalNetWorth
+        })
+      }
   }
 
   return {
