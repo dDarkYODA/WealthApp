@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache'
 export async function addAsset(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Demo Mode: Cannot add asset.')
+  if (!user) return // Demo Mode: Short-circuit
 
   const assetType = formData.get('asset_type') as string
   const name = formData.get('name') as string
@@ -38,7 +38,7 @@ export async function addAsset(formData: FormData) {
 export async function updateAsset(id: string, formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Demo Mode: Cannot update asset.')
+  if (!user) return // Demo Mode: Short-circuit
 
   const assetType = formData.get('asset_type') as string
   const name = formData.get('name') as string
@@ -67,7 +67,7 @@ export async function updateAsset(id: string, formData: FormData) {
 export async function deleteAsset(id: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Demo Mode: Cannot delete asset.')
+  if (!user) return // Demo Mode: Short-circuit
 
   const { error } = await supabase.from('assets').delete().eq('id', id).eq('user_id', user.id)
 
@@ -79,7 +79,7 @@ export async function deleteAsset(id: string) {
 export async function addAssetsBulk(assets: any[]) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Demo Mode: Cannot import assets.')
+  if (!user) return // Demo Mode: Short-circuit
 
   const assetsToInsert = assets.map(a => ({
     user_id: user.id,

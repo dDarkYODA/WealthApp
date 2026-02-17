@@ -14,7 +14,7 @@ export default async function ExpensesPage() {
           <h1 className="text-3xl font-black">Expense Engine</h1>
           {!user && <span className="bg-black text-white px-3 py-1 font-bold text-sm">DEMO MODE (Read Only)</span>}
       </div>
-      <ExpenseManager initialExpenses={expenses} />
+      <ExpenseManager initialExpenses={expenses} isDemo={!user} />
     </div>
   )
 }

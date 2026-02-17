@@ -15,10 +15,14 @@ import ExpenseForm from './ExpenseForm'
 import { deleteExpense } from '@/actions/expenses'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
-export default function ExpenseManager({ initialExpenses }: { initialExpenses: any[] }) {
+export default function ExpenseManager({ initialExpenses, isDemo = false }: { initialExpenses: any[], isDemo?: boolean }) {
   const [isAddOpen, setIsAddOpen] = useState(false)
 
   const handleDelete = async (id: string) => {
+    if (isDemo) {
+        alert('This feature is disabled in Demo Mode.')
+        return
+    }
     if (confirm('Delete this expense?')) {
         await deleteExpense(id)
     }
@@ -32,13 +36,20 @@ export default function ExpenseManager({ initialExpenses }: { initialExpenses: a
       <div className="flex justify-between items-center">
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-black text-white hover:bg-gray-800 font-bold border-2 border-transparent">Add Expense</Button>
+            <Button
+                className="bg-black text-white hover:bg-gray-800 font-bold border-2 border-transparent"
+                disabled={isDemo}
+                title={isDemo ? "Disabled in Demo Mode" : "Add Expense"}
+            >
+                Add Expense
+            </Button>
           </DialogTrigger>
           <DialogContent className="border-4 border-black">
             <DialogHeader>
               <DialogTitle className="font-black text-xl">Add New Expense</DialogTitle>
             </DialogHeader>
-            <ExpenseForm onClose={() => setIsAddOpen(false)} />
+            {!isDemo && <ExpenseForm onClose={() => setIsAddOpen(false)} />}
+            {isDemo && <p className="font-bold text-red-600">Action disabled in Demo Mode.</p>}
           </DialogContent>
         </Dialog>
       </div>
@@ -62,7 +73,15 @@ export default function ExpenseManager({ initialExpenses }: { initialExpenses: a
                         <TableCell className="text-right border-r-2 border-black font-bold">{formatCurrency(exp.amount_inr)}</TableCell>
                         <TableCell className="border-r-2 border-black font-medium">{formatDate(exp.next_post_date)}</TableCell>
                         <TableCell className="text-right">
-                            <Button variant="destructive" size="sm" onClick={() => handleDelete(exp.id)} className="font-bold border-2 border-black">Remove</Button>
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDelete(exp.id)}
+                                className="font-bold border-2 border-black"
+                                disabled={isDemo}
+                            >
+                                Remove
+                            </Button>
                         </TableCell>
                     </TableRow>
                 ))}
@@ -94,7 +113,15 @@ export default function ExpenseManager({ initialExpenses }: { initialExpenses: a
                         <TableCell className="font-bold border-r-2 border-black">{exp.category}</TableCell>
                         <TableCell className="text-right border-r-2 border-black font-bold">{formatCurrency(exp.amount_inr)}</TableCell>
                         <TableCell className="text-right">
-                             <Button variant="destructive" size="sm" onClick={() => handleDelete(exp.id)} className="font-bold border-2 border-black">Delete</Button>
+                             <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDelete(exp.id)}
+                                className="font-bold border-2 border-black"
+                                disabled={isDemo}
+                             >
+                                Delete
+                             </Button>
                         </TableCell>
                     </TableRow>
                 ))}
