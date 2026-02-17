@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
+import { DEMO_ASSETS } from '@/lib/demo-data'
 
 // Mock Data Fetchers
 async function getUSDINRRate() {
@@ -19,13 +20,6 @@ async function getStockPrice(ticker: string) {
 async function getMFNAV(schemeCode: string) {
   return 150.5
 }
-
-// --- DEMO DATA ---
-const DEMO_ASSETS = [
-    { id: 'demo-1', user_id: 'demo', asset_type: 'Stock', ticker_or_code: 'AAPL', quantity: 15, avg_price_inr: 14500, market_value_inr: 0, loan_amount_inr: 0, name: 'Apple Inc.' },
-    { id: 'demo-2', user_id: 'demo', asset_type: 'MF', ticker_or_code: 'SBI-BLUECHIP', quantity: 5000, avg_price_inr: 120, market_value_inr: 0, loan_amount_inr: 0, name: 'SBI Bluechip Fund' },
-    { id: 'demo-3', user_id: 'demo', asset_type: 'Real Estate', ticker_or_code: 'APT-101', quantity: 1, avg_price_inr: 8500000, market_value_inr: 12000000, loan_amount_inr: 4500000, name: 'Luxury Apartment' },
-]
 
 export async function getWealthDashboardData() {
   const supabase = await createClient()

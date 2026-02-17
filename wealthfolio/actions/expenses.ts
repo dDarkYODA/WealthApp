@@ -2,12 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
-
-const DEMO_EXPENSES = [
-    { id: 'demo-exp-1', user_id: 'demo', category: 'Rent', amount_inr: 25000, is_recurring: true, next_post_date: '2026-03-01', date: '2026-02-01' },
-    { id: 'demo-exp-2', user_id: 'demo', category: 'Groceries', amount_inr: 5000, is_recurring: false, next_post_date: null, date: '2026-02-14' },
-    { id: 'demo-exp-3', user_id: 'demo', category: 'Netflix', amount_inr: 699, is_recurring: true, next_post_date: '2026-03-10', date: '2026-02-10' },
-]
+import { DEMO_EXPENSES } from '@/lib/demo-data'
 
 export async function getExpenses() {
   const supabase = await createClient()
@@ -28,7 +23,7 @@ export async function getExpenses() {
 export async function addExpense(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Demo Mode: Cannot add expense. Please sign in (Disabled).')
+  if (!user) return // Demo Mode: Short-circuit
 
   const category = formData.get('category') as string
   const amount = Number(formData.get('amount_inr'))
@@ -52,7 +47,7 @@ export async function addExpense(formData: FormData) {
 export async function deleteExpense(id: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Demo Mode: Cannot delete expense.')
+  if (!user) return // Demo Mode: Short-circuit
 
   const { error } = await supabase.from('expenses').delete().eq('id', id).eq('user_id', user.id)
   if (error) throw new Error(error.message)
@@ -103,7 +98,7 @@ export async function checkRecurringExpenses() {
 export async function bulkAddExpenses(expenses: any[]) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Demo Mode: Cannot save expenses.')
+  if (!user) return // Demo Mode: Short-circuit
 
   const expensesToInsert = expenses.map(e => ({
     user_id: user.id,
