@@ -95,3 +95,30 @@ export async function checkRecurringExpenses() {
 
   return 0
 }
+
+export async function bulkAddExpenses(expenses: any[]) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const expensesToInsert = expenses.map(e => ({
+    user_id: user.id,
+    category: e.category,
+    amount_inr: Number(e.amount),
+    is_recurring: false,
+    date: e.date.split('/').reverse().join('-'), // Convert DD/MM/YYYY to YYYY-MM-DD
+    // Assuming description goes into category or we add a description column later.
+    // For now, appending description to category if it's different, or just using category.
+    // Ideally, we should migrate schema to add description, but to stick to current schema:
+    // We will just use the category field for the category.
+  }))
+
+  const { error } = await supabase.from('expenses').insert(expensesToInsert)
+
+  if (error) {
+      console.error(error)
+      throw new Error(error.message)
+  }
+  revalidatePath('/expenses')
+  revalidatePath('/')
+}
