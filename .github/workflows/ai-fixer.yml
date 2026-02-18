@@ -16,11 +16,18 @@ jobs:
           -H "Content-Type: application/json" \
           -H "X-Goog-Api-Key: ${{ secrets.JULES_API_KEY }}" \
           -d '{
-            "prompt": "Please apply the fix suggested in this comment: ${{ github.event.comment.body }}",
+            "prompt": "TASK: Apply the fix suggested in this comment: ${{ github.event.comment.body }}. \n\nCRITICAL CONSTRAINTS (Do not deviate): \n1. LOCALIZATION: All currency displays MUST use the Indian Numbering System (Lakhs/Crores) using Intl.NumberFormat(\"en-IN\"). Dates must remain DD/MM/YYYY. \n2. UI CONTRAST: Ensure all text, especially in tables and inputs, remains Solid Black (#000000). Do not use muted grays. \n3. COMPATIBILITY: Do not re-introduce the middleware.ts file; keep the dashboard publicly accessible for now. \n4. VERIFICATION: Ensure the fix does not break the live USD/INR exchange rate fetch logic.",
             "sourceContext": {
               "source": "sources/github/${{ github.repository }}",
-              "githubRepoContext": { "startingBranch": "${{ github.event.issue.pull_request && 'pr-branch' || 'main' }}" }
+              "githubRepoContext": { "startingBranch": "${{ github.event.issue.pull_request.head.ref || 'main' }}" }
             },
+            "automationMode": "AUTO_CREATE_PR",
+            "title": "AI Fix: ${{ github.event.comment.id }} (Verified for India UI Standards)"
+          }',
             "automationMode": "AUTO_CREATE_PR",
             "title": "Fix suggested by AI Review"
           }'
+      - name: Super-Linter
+        uses: super-linter/super-linter@v8.5.0
+      - name: Code Review GPT
+        uses: mattzcarey/shippie@v0.20.0
