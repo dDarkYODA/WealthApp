@@ -5,27 +5,47 @@ on:
 
 jobs:
   apply-ai-fix:
-    # Only run if the comment is from CodeRabbit/Sourcery AND it is on a Pull Request
+    # Fix 1: Verify the author is the bot, not just a comment mentioning the name
     if: >
       github.event.issue.pull_request != null &&
-      (contains(github.event.comment.body, 'CodeRabbit') || 
-       contains(github.event.comment.body, 'Sourcery'))
+      (github.event.comment.user.login == 'coderabbitai[bot]' || 
+       github.event.comment.user.login == 'sourcery-ai[bot]')
     runs-on: ubuntu-latest
+    env:
+      # Fix 3 (Part A): Export raw body to ENV to prevent shell/JSON injection
+      COMMENT_BODY: ${{ github.event.comment.body }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Fetch PR Head Branch
+        # Fix 2: Fetch the actual head.ref using GitHub CLI (since it's null in issue_comment)
+        id: pr_info
+        run: |
+          head_ref=$(gh pr view ${{ github.event.issue.number }} --json headRefName --template '{{.headRefName}}')
+          echo "HEAD_REF=$head_ref" >> $GITHUB_OUTPUT
+
       - name: Trigger Jules API
         run: |
+          # Fix 3 (Part B): Construct JSON safely using jq
+          # This handles all escaping automatically
+          jq -n \
+            --arg body "$COMMENT_BODY" \
+            --arg branch "${{ steps.pr_info.outputs.HEAD_REF }}" \
+            --arg title "AI Fix: ${{ github.event.comment.id }} (Verified for India UI Standards)" \
+            '{
+              prompt: "TASK: Apply the fix suggested in this comment: \($body). \n\nCRITICAL CONSTRAINTS: \n1. LOCALIZATION: Indian Numbering (en-IN). \n2. UI: Solid Black (#000000). \n3. COMPATIBILITY: No middleware.ts. \n4. VERIFICATION: Keep USD/INR fetch.",
+              sourceContext: {
+                source: "sources/github/${{ github.repository }}",
+                githubRepoContext: { startingBranch: $branch }
+              },
+              automationMode: "AUTO_CREATE_PR",
+              title: $title
+            }' > payload.json
+
           curl 'https://jules.googleapis.com/v1alpha/sessions' \
-          -X POST \
-          -H "Content-Type: application/json" \
-          -H "X-Goog-Api-Key: ${{ secrets.JULES_API_KEY }}" \
-          -d '{
-            "prompt": "TASK: Apply the fix suggested in this comment: ${{ github.event.comment.body }}. \n\nCRITICAL CONSTRAINTS (Do not deviate): \n1. LOCALIZATION: All currency displays MUST use the Indian Numbering System (Lakhs/Crores) using Intl.NumberFormat(\"en-IN\"). Dates must remain DD/MM/YYYY. \n2. UI CONTRAST: Ensure all text, especially in tables and inputs, remains Solid Black (#000000). Do not use muted grays. \n3. COMPATIBILITY: Do not re-introduce the middleware.ts file; keep the dashboard publicly accessible for now. \n4. VERIFICATION: Ensure the fix does not break the live USD/INR exchange rate fetch logic.",
-            "sourceContext": {
-              "source": "sources/github/${{ github.repository }}",
-              "githubRepoContext": { 
-                "startingBranch": "${{ github.event.issue.pull_request.head.ref || 'main' }}" 
-              }
-            },
-            "automationMode": "AUTO_CREATE_PR",
-            "title": "AI Fix: ${{ github.event.comment.id }} (Verified for India UI Standards)"
-          }'
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-Goog-Api-Key: ${{ secrets.JULES_API_KEY }}" \
+            --data "@payload.json"
