@@ -1,0 +1,26 @@
+name: Jules AI Fixer
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  apply-ai-fix:
+    # Only run if the comment is from CodeRabbit or Sourcery
+    if: contains(github.event.comment.body, 'CodeRabbit') || contains(github.event.comment.body, 'Sourcery')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Jules API
+        run: |
+          curl 'https://jules.googleapis.com/v1alpha/sessions' \
+          -X POST \
+          -H "Content-Type: application/json" \
+          -H "X-Goog-Api-Key: ${{ secrets.JULES_API_KEY }}" \
+          -d '{
+            "prompt": "Please apply the fix suggested in this comment: ${{ github.event.comment.body }}",
+            "sourceContext": {
+              "source": "sources/github/${{ github.repository }}",
+              "githubRepoContext": { "startingBranch": "${{ github.event.issue.pull_request && 'pr-branch' || 'main' }}" }
+            },
+            "automationMode": "AUTO_CREATE_PR",
+            "title": "Fix suggested by AI Review"
+          }'
