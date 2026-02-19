@@ -4,14 +4,14 @@ import { createClient } from '@/utils/supabase/server'
 import { DEMO_ASSETS } from '@/lib/demo-data'
 
 // Mock Data Fetchers
-async function getUSDINRRate() {
+function getUSDINRRate() {
   return 84.0
 }
 
-async function getStockPrice(ticker: string) {
+function getStockPrice(ticker: string) {
   const usTickers = ['AAPL', 'GOOGL', 'TSLA', 'MSFT', 'AMZN']
   if (usTickers.includes(ticker.toUpperCase())) {
-     const usdRate = await getUSDINRRate()
+     const usdRate = getUSDINRRate()
      return (Math.random() * 100 + 150) * usdRate
   }
   return 100.0
@@ -43,7 +43,7 @@ export async function getWealthDashboardData() {
     assets = data || []
   }
 
-  const usdRate = await getUSDINRRate()
+  const usdRate = getUSDINRRate()
 
   let totalNetWorth = 0
   let equity = 0
@@ -55,7 +55,7 @@ export async function getWealthDashboardData() {
     let marketValue = 0
 
     if (asset.asset_type === 'Stock') {
-       currentPrice = await getStockPrice(asset.ticker_or_code)
+       currentPrice = getStockPrice(asset.ticker_or_code)
        marketValue = currentPrice * Number(asset.quantity)
        equity += marketValue
     } else if (asset.asset_type === 'MF') {
