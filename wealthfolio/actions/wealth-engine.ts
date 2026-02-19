@@ -8,10 +8,9 @@ async function getUSDINRRate() {
   return 84.0
 }
 
-async function getStockPrice(ticker: string) {
+async function getStockPrice(ticker: string, usdRate: number) {
   const usTickers = ['AAPL', 'GOOGL', 'TSLA', 'MSFT', 'AMZN']
   if (usTickers.includes(ticker.toUpperCase())) {
-     const usdRate = await getUSDINRRate()
      return (Math.random() * 100 + 150) * usdRate
   }
   return 100.0
@@ -55,7 +54,7 @@ export async function getWealthDashboardData() {
     let marketValue = 0
 
     if (asset.asset_type === 'Stock') {
-       currentPrice = await getStockPrice(asset.ticker_or_code)
+       currentPrice = await getStockPrice(asset.ticker_or_code, usdRate)
        marketValue = currentPrice * Number(asset.quantity)
        equity += marketValue
     } else if (asset.asset_type === 'MF') {
