@@ -5,7 +5,17 @@ import { DEMO_ASSETS } from '@/lib/demo-data'
 
 // Mock Data Fetchers
 async function getUSDINRRate() {
-  return 84.0
+  try {
+    const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
+      next: { revalidate: 3600 }
+    })
+    if (!res.ok) throw new Error('Failed to fetch')
+    const data = await res.json()
+    return data.rates?.INR || 84.0
+  } catch (error) {
+    console.error('Failed to fetch USD/INR rate:', error)
+    return 84.0
+  }
 }
 
 async function getStockPrice(ticker: string, usdRate: number) {
