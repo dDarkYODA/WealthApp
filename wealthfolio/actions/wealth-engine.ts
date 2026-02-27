@@ -7,11 +7,12 @@ import { DEMO_ASSETS } from '@/lib/demo-data'
 async function getUSDINRRate() {
   try {
     const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
-      next: { revalidate: 3600 }
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(5000)
     })
     if (!res.ok) throw new Error('Failed to fetch')
     const data = await res.json()
-    return data.rates?.INR || 84.0
+    return data.rates?.INR ?? 84.0
   } catch (error) {
     console.error('Failed to fetch USD/INR rate:', error)
     return 84.0
