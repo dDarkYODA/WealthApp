@@ -20,11 +20,18 @@ async function getUSDINRRate() {
 }
 
 async function getStockPrice(ticker: string, usdRate: number) {
-  const usTickers = ['AAPL', 'GOOGL', 'TSLA', 'MSFT', 'AMZN']
-  if (usTickers.includes(ticker.toUpperCase())) {
-     return (Math.random() * 100 + 150) * usdRate
+  const usTickers: Record<string, number> = {
+    'AAPL': 175.0,
+    'GOOGL': 140.0,
+    'TSLA': 220.0,
+    'MSFT': 400.0,
+    'AMZN': 170.0
   }
-  return 100.0
+  const t = ticker.toUpperCase()
+  if (t in usTickers) {
+     return usTickers[t] * usdRate
+  }
+  return 100.0 * usdRate
 }
 
 async function getMFNAV(schemeCode: string) {
