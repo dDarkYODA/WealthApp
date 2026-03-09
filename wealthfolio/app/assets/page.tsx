@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic'
 import { createClient } from '@/utils/supabase/server'
 import AssetManager from '@/components/AssetManager'
 import { DEMO_ASSETS } from '@/lib/demo-data'

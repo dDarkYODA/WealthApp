@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic'
 import { getWealthDashboardData } from '@/actions/wealth-engine'
 import { checkRecurringExpenses } from '@/actions/expenses'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
