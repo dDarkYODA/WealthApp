@@ -1,5 +1,4 @@
 export const dynamic = 'force-dynamic'
-
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextResponse } from 'next/server'
 
@@ -50,7 +49,7 @@ export async function POST(req: Request) {
     let text = response.text()
 
     // Clean up markdown code blocks if present
-    text = text.replace(/```json/g, '').replace(/```/g, '').trim()
+    text = text.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim()
 
     const transactions = JSON.parse(text)
 

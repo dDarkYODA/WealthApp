@@ -1,5 +1,4 @@
 export const dynamic = 'force-dynamic'
-
 import { getExpenses } from '@/actions/expenses'
 import ExpenseManager from '@/components/ExpenseManager'
 import { createClient } from '@/utils/supabase/server'
