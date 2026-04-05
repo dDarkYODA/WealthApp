@@ -5,15 +5,33 @@ import { DEMO_ASSETS } from '@/lib/demo-data'
 
 // Mock Data Fetchers
 async function getUSDINRRate() {
-  return 84.0
+  try {
+    const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(5000)
+    })
+    if (!res.ok) throw new Error('Failed to fetch')
+    const data = await res.json()
+    return data.rates?.INR ?? 84.0
+  } catch (error) {
+    console.error('Failed to fetch USD/INR rate:', error)
+    return 84.0
+  }
 }
 
 async function getStockPrice(ticker: string, usdRate: number) {
-  const usTickers = ['AAPL', 'GOOGL', 'TSLA', 'MSFT', 'AMZN']
-  if (usTickers.includes(ticker.toUpperCase())) {
-     return (Math.random() * 100 + 150) * usdRate
+  const usTickers: Record<string, number> = {
+    'AAPL': 175.0,
+    'GOOGL': 140.0,
+    'TSLA': 220.0,
+    'MSFT': 400.0,
+    'AMZN': 170.0
   }
-  return 100.0
+  const t = ticker.toUpperCase()
+  if (t in usTickers) {
+     return usTickers[t] * usdRate
+  }
+  return 100.0 * usdRate
 }
 
 async function getMFNAV(schemeCode: string) {
